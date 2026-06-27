@@ -17,12 +17,15 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
     public IActionResult GetProducts()
     {
         return Ok(_productService.GetAll());
     }
 
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult GetProduct(int id)
     {
         var product = _productService.GetById(id);
@@ -31,6 +34,8 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("search")]
+    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult Search([FromQuery] string? name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -40,6 +45,8 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(Product), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult Create([FromBody] ProductDto dto)
     {
         if (!ModelState.IsValid)
@@ -50,6 +57,9 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult Update(int id, [FromBody] ProductDto dto)
     {
         if (!ModelState.IsValid)
@@ -62,6 +72,8 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult Delete(int id)
     {
         if (!_productService.Delete(id))
