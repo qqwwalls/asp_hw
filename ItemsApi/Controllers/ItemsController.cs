@@ -14,14 +14,12 @@ public class ItemsController : ControllerBase
         new Item { Id = 3, Name = "Pen" }
     };
 
-    // GET: api/items
     [HttpGet]
     public IActionResult GetItems()
     {
         return Ok(_items);
     }
 
-    // GET: api/items/{id}
     [HttpGet("{id:int}")]
     public IActionResult GetItem(int id)
     {
@@ -33,7 +31,6 @@ public class ItemsController : ControllerBase
         return Ok(item);
     }
 
-    // GET: api/items/search
     [HttpGet("search")]
     public IActionResult SearchItems([FromQuery] string? name)
     {
@@ -49,7 +46,6 @@ public class ItemsController : ControllerBase
         return Ok(results);
     }
 
-    // POST: api/items
     [HttpPost]
     public IActionResult CreateItem([FromBody] Item newItem)
     {
@@ -64,7 +60,6 @@ public class ItemsController : ControllerBase
         return CreatedAtAction(nameof(GetItem), new { id = newItem.Id }, newItem);
     }
 
-    // PUT: api/items/{id}
     [HttpPut("{id:int}")]
     public IActionResult UpdateItem(int id, [FromBody] Item updatedItem)
     {
@@ -83,7 +78,6 @@ public class ItemsController : ControllerBase
         return Ok(item);
     }
 
-    // DELETE: api/items/{id}
     [HttpDelete("{id:int}")]
     public IActionResult DeleteItem(int id)
     {
