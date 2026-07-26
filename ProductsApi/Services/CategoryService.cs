@@ -21,11 +21,7 @@ public class CategoryService : ICategoryService
     {
         var category = new Category
         {
-            Name = dto.Name,
-            Slug = dto.Slug,
-            Url = dto.Url,
-            ParentId = dto.ParentId,
-            IsActive = true
+            Name = dto.Name
         };
 
         _context.Categories.Add(category);
@@ -34,11 +30,7 @@ public class CategoryService : ICategoryService
         return new CategoryReadDto
         {
             Id = category.Id,
-            Name = category.Name,
-            Slug = category.Slug,
-            Url = category.Url,
-            IsActive = category.IsActive,
-            ParentId = category.ParentId
+            Name = category.Name
         };
     }
 
@@ -48,11 +40,7 @@ public class CategoryService : ICategoryService
             .Select(c => new CategoryReadDto
             {
                 Id = c.Id,
-                Name = c.Name,
-                Slug = c.Slug,
-                Url = c.Url,
-                IsActive = c.IsActive,
-                ParentId = c.ParentId
+                Name = c.Name
             })
             .ToListAsync();
     }
@@ -65,11 +53,7 @@ public class CategoryService : ICategoryService
         return new CategoryReadDto
         {
             Id = category.Id,
-            Name = category.Name,
-            Slug = category.Slug,
-            Url = category.Url,
-            IsActive = category.IsActive,
-            ParentId = category.ParentId
+            Name = category.Name
         };
     }
 }

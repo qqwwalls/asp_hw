@@ -23,34 +23,13 @@ namespace ProductsApi.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("id");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("is_active");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT")
                         .HasColumnName("name");
 
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("parent_id");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("slug");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("url");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("ParentId");
 
                     b.ToTable("categories");
                 });
@@ -71,20 +50,6 @@ namespace ProductsApi.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Products");
-                });
-
-            modelBuilder.Entity("ProductsApi.Models.Category", b =>
-                {
-                    b.HasOne("ProductsApi.Models.Category", "Parent")
-                        .WithMany("SubCategories")
-                        .HasForeignKey("ParentId");
-
-                    b.Navigation("Parent");
-                });
-
-            modelBuilder.Entity("ProductsApi.Models.Category", b =>
-                {
-                    b.Navigation("SubCategories");
                 });
 #pragma warning restore 612, 618
         }

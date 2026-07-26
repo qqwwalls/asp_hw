@@ -16,20 +16,11 @@ namespace ProductsApi.Migrations
                 {
                     id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    slug = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    url = table.Column<string>(type: "TEXT", nullable: false),
-                    is_active = table.Column<bool>(type: "INTEGER", nullable: false),
-                    parent_id = table.Column<int>(type: "INTEGER", nullable: true)
+                    name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_categories", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_categories_categories_parent_id",
-                        column: x => x.parent_id,
-                        principalTable: "categories",
-                        principalColumn: "id");
                 });
 
             migrationBuilder.CreateTable(
@@ -45,11 +36,6 @@ namespace ProductsApi.Migrations
                 {
                     table.PrimaryKey("PK_Products", x => x.Id);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_categories_parent_id",
-                table: "categories",
-                column: "parent_id");
         }
 
         /// <inheritdoc />
