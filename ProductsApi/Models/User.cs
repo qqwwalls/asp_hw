@@ -19,4 +19,6 @@ public class User
     [Required]
     [Column("password_hash")]
     public string PasswordHash { get; set; } = string.Empty;
+
+    public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }

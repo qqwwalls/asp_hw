@@ -7,6 +7,7 @@ using ProductsApi.Models;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using BCrypt.Net;
@@ -24,11 +25,11 @@ public class AuthService : IAuthService
         _config = config;
     }
 
-    public async Task<bool> RegisterAsync(RegisterDto dto)
+    public async Task<AuthResultDto?> RegisterAsync(RegisterDto dto)
     {
         if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
         {
-            return false;
+            return null;
         }
 
         var user = new User
@@ -40,10 +41,26 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        return true;
+        var token = GenerateJwtToken(user);
+        var refreshToken = GenerateRefreshToken();
+
+        user.RefreshTokens.Add(new RefreshToken
+        {
+            Token = refreshToken,
+            Expires = DateTime.UtcNow.AddDays(_config.GetValue<int>("JwtSettings:RefreshTokenExpiryDays")),
+            Created = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+
+        return new AuthResultDto
+        {
+            Token = token,
+            RefreshToken = refreshToken
+        };
     }
 
-    public async Task<string> LoginAsync(LoginDto dto)
+    public async Task<AuthResultDto?> LoginAsync(LoginDto dto)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
@@ -51,6 +68,41 @@ public class AuthService : IAuthService
             return null;
         }
 
+        var token = GenerateJwtToken(user);
+        var refreshToken = GenerateRefreshToken();
+
+        user.RefreshTokens.Add(new RefreshToken
+        {
+            Token = refreshToken,
+            Expires = DateTime.UtcNow.AddDays(_config.GetValue<int>("JwtSettings:RefreshTokenExpiryDays")),
+            Created = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+
+        return new AuthResultDto
+        {
+            Token = token,
+            RefreshToken = refreshToken
+        };
+    }
+
+    public async Task<string?> RefreshTokenAsync(string refreshToken)
+    {
+        var rt = await _context.RefreshTokens
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(r => r.Token == refreshToken);
+
+        if (rt == null || rt.Expires < DateTime.UtcNow)
+        {
+            return null;
+        }
+
+        return GenerateJwtToken(rt.User);
+    }
+
+    private string GenerateJwtToken(User user)
+    {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_config["JwtSettings:SecretKey"]);
         var tokenDescriptor = new SecurityTokenDescriptor
@@ -68,5 +120,13 @@ public class AuthService : IAuthService
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
+    }
+
+    private string GenerateRefreshToken()
+    {
+        var randomNumber = new byte[32];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
     }
 }

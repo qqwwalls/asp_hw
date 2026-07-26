@@ -5,6 +5,7 @@ namespace ProductsApi.Services;
 
 public interface IAuthService
 {
-    Task<string> LoginAsync(LoginDto dto);
-    Task<bool> RegisterAsync(RegisterDto dto);
+    Task<AuthResultDto?> LoginAsync(LoginDto dto);
+    Task<AuthResultDto?> RegisterAsync(RegisterDto dto);
+    Task<string?> RefreshTokenAsync(string refreshToken);
 }
