@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using ProductsApi.Data;
+using ProductsApi.Repositories;
 using ProductsApi.Services;
 using System.Reflection;
 
@@ -19,6 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddSingleton<IProductService, ProductService>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 var app = builder.Build();

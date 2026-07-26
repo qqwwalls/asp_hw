@@ -3,6 +3,7 @@ using ProductsApi.DTOs;
 using ProductsApi.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace ProductsApi.Controllers;
 
@@ -46,5 +47,31 @@ public class CategoryController : ControllerBase
         if (category == null) return NotFound();
         
         return Ok(category);
+    }
+
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(CategoryReadDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(int id, [FromBody] CategoryUpdateDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var updated = await _categoryService.UpdateAsync(id, dto);
+        if (updated == null) return NotFound();
+
+        return Ok(updated);
+    }
+
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var deleted = await _categoryService.DeleteAsync(id);
+        if (!deleted) return NotFound();
+
+        return NoContent();
     }
 }

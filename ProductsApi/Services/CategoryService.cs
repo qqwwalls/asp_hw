@@ -1,7 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-using ProductsApi.Data;
 using ProductsApi.DTOs;
 using ProductsApi.Models;
+using ProductsApi.Repositories;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,11 +9,11 @@ namespace ProductsApi.Services;
 
 public class CategoryService : ICategoryService
 {
-    private readonly AppDbContext _context;
+    private readonly ICategoryRepository _repository;
 
-    public CategoryService(AppDbContext context)
+    public CategoryService(ICategoryRepository repository)
     {
-        _context = context;
+        _repository = repository;
     }
 
     public async Task<CategoryReadDto> CreateAsync(CategoryCreateDto dto)
@@ -24,30 +23,28 @@ public class CategoryService : ICategoryService
             Name = dto.Name
         };
 
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
+        var created = await _repository.AddAsync(category);
 
         return new CategoryReadDto
         {
-            Id = category.Id,
-            Name = category.Name
+            Id = created.Id,
+            Name = created.Name
         };
     }
 
     public async Task<IEnumerable<CategoryReadDto>> GetAllAsync()
     {
-        return await _context.Categories
-            .Select(c => new CategoryReadDto
-            {
-                Id = c.Id,
-                Name = c.Name
-            })
-            .ToListAsync();
+        var categories = await _repository.GetAllAsync();
+        return categories.Select(c => new CategoryReadDto
+        {
+            Id = c.Id,
+            Name = c.Name
+        });
     }
 
     public async Task<CategoryReadDto?> GetByIdAsync(int id)
     {
-        var category = await _context.Categories.FirstOrDefaultAsync(c => c.Id == id);
+        var category = await _repository.GetByIdAsync(id);
         if (category == null) return null;
 
         return new CategoryReadDto
@@ -55,5 +52,26 @@ public class CategoryService : ICategoryService
             Id = category.Id,
             Name = category.Name
         };
+    }
+
+    public async Task<CategoryReadDto?> UpdateAsync(int id, CategoryUpdateDto dto)
+    {
+        var category = await _repository.GetByIdAsync(id);
+        if (category == null) return null;
+
+        category.Name = dto.Name;
+        
+        var updated = await _repository.UpdateAsync(category);
+
+        return new CategoryReadDto
+        {
+            Id = updated.Id,
+            Name = updated.Name
+        };
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        return await _repository.DeleteAsync(id);
     }
 }
