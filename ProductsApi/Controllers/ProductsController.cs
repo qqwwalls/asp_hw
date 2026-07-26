@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
-using ProductsApi.Models;
 using ProductsApi.DTOs;
 using ProductsApi.Services;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using System;
 
 namespace ProductsApi.Controllers;
 
@@ -16,69 +19,41 @@ public class ProductsController : ControllerBase
         _productService = productService;
     }
 
-    [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-    public IActionResult GetProducts()
+    [HttpPost]
+    [ProducesResponseType(typeof(ProductReadDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Create([FromForm] ProductCreateDto dto)
     {
-        return Ok(_productService.GetAll());
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            var created = await _productService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<ProductReadDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll()
+    {
+        var products = await _productService.GetAllAsync();
+        return Ok(products);
     }
 
     [HttpGet("{id:int}")]
-    [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProductReadDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult GetProduct(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var product = _productService.GetById(id);
-        if (product == null) return NotFound("Product not found");
+        var product = await _productService.GetByIdAsync(id);
+        if (product == null) return NotFound();
+        
         return Ok(product);
-    }
-
-    [HttpGet("search")]
-    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult Search([FromQuery] string? name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            return BadRequest("Name parameter is required");
-
-        return Ok(_productService.SearchByName(name));
-    }
-
-    [HttpPost]
-    [ProducesResponseType(typeof(Product), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult Create([FromBody] ProductDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var created = _productService.Create(dto);
-        return CreatedAtAction(nameof(GetProduct), new { id = created.Id }, created);
-    }
-
-    [HttpPut("{id:int}")]
-    [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult Update(int id, [FromBody] ProductDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var updated = _productService.Update(id, dto);
-        if (updated == null) return NotFound("Product not found");
-
-        return Ok(updated);
-    }
-
-    [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult Delete(int id)
-    {
-        if (!_productService.Delete(id))
-            return NotFound("Product not found");
-
-        return NoContent();
     }
 }
