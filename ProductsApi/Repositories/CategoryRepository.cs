@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ProductsApi.Data;
@@ -47,5 +48,47 @@ public class CategoryRepository : ICategoryRepository
         _context.Categories.Remove(category);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<IEnumerable<Category>> GetParentsAsync(int id)
+    {
+        var allCategories = await _context.Categories.ToListAsync();
+        var parents = new List<Category>();
+        
+        var current = allCategories.FirstOrDefault(c => c.Id == id);
+        while (current != null && current.ParentId.HasValue)
+        {
+            var parent = allCategories.FirstOrDefault(c => c.Id == current.ParentId.Value);
+            if (parent != null)
+            {
+                parents.Add(parent);
+                current = parent;
+            }
+            else
+            {
+                break;
+            }
+        }
+        
+        return parents;
+    }
+
+    public async Task<IEnumerable<Category>> GetChildrenAsync(int id)
+    {
+        var allCategories = await _context.Categories.ToListAsync();
+        var children = new List<Category>();
+
+        void CollectChildren(int parentId)
+        {
+            var directChildren = allCategories.Where(c => c.ParentId == parentId).ToList();
+            children.AddRange(directChildren);
+            foreach (var child in directChildren)
+            {
+                CollectChildren(child.Id);
+            }
+        }
+
+        CollectChildren(id);
+        return children;
     }
 }

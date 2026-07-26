@@ -20,7 +20,8 @@ public class CategoryService : ICategoryService
     {
         var category = new Category
         {
-            Name = dto.Name
+            Name = dto.Name,
+            ParentId = dto.ParentId
         };
 
         var created = await _repository.AddAsync(category);
@@ -73,5 +74,51 @@ public class CategoryService : ICategoryService
     public async Task<bool> DeleteAsync(int id)
     {
         return await _repository.DeleteAsync(id);
+    }
+
+    public async Task<IEnumerable<CategoryReadDto>> GetParentsAsync(int id)
+    {
+        var parents = await _repository.GetParentsAsync(id);
+        return parents.Select(p => new CategoryReadDto
+        {
+            Id = p.Id,
+            Name = p.Name
+        });
+    }
+
+    public async Task<IEnumerable<CategoryReadDto>> GetChildrenAsync(int id)
+    {
+        var children = await _repository.GetChildrenAsync(id);
+        return children.Select(c => new CategoryReadDto
+        {
+            Id = c.Id,
+            Name = c.Name
+        });
+    }
+
+    public async Task<IEnumerable<CategoryTreeDto>> GetTreeAsync()
+    {
+        var allCategories = await _repository.GetAllAsync();
+        
+        var lookup = allCategories.ToDictionary(
+            c => c.Id, 
+            c => new CategoryTreeDto { Id = c.Id, Name = c.Name, ParentId = c.ParentId }
+        );
+
+        var tree = new List<CategoryTreeDto>();
+
+        foreach (var category in lookup.Values)
+        {
+            if (category.ParentId.HasValue && lookup.TryGetValue(category.ParentId.Value, out var parent))
+            {
+                parent.Children.Add(category);
+            }
+            else
+            {
+                tree.Add(category);
+            }
+        }
+
+        return tree;
     }
 }
