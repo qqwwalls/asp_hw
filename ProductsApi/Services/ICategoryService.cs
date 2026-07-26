@@ -1,10 +1,12 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using ProductsApi.DTOs;
 
 namespace ProductsApi.Services;
 
 public interface ICategoryService
 {
-    CategoryReadDto Create(CategoryCreateDto dto);
-    IEnumerable<CategoryReadDto> GetAll();
-    CategoryReadDto? GetById(int id);
+    Task<CategoryReadDto> CreateAsync(CategoryCreateDto dto);
+    Task<IEnumerable<CategoryReadDto>> GetAllAsync();
+    Task<CategoryReadDto?> GetByIdAsync(int id);
 }

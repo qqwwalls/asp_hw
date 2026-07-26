@@ -1,8 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using ProductsApi.Data;
 using ProductsApi.DTOs;
 using ProductsApi.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ProductsApi.Services;
 
@@ -15,43 +17,59 @@ public class CategoryService : ICategoryService
         _context = context;
     }
 
-    public CategoryReadDto Create(CategoryCreateDto dto)
+    public async Task<CategoryReadDto> CreateAsync(CategoryCreateDto dto)
     {
         var category = new Category
         {
-            Name = dto.Name
+            Name = dto.Name,
+            Slug = dto.Slug,
+            Url = dto.Url,
+            ParentId = dto.ParentId,
+            IsActive = true
         };
 
         _context.Categories.Add(category);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
 
         return new CategoryReadDto
         {
             Id = category.Id,
-            Name = category.Name
+            Name = category.Name,
+            Slug = category.Slug,
+            Url = category.Url,
+            IsActive = category.IsActive,
+            ParentId = category.ParentId
         };
     }
 
-    public IEnumerable<CategoryReadDto> GetAll()
+    public async Task<IEnumerable<CategoryReadDto>> GetAllAsync()
     {
-        return _context.Categories
+        return await _context.Categories
             .Select(c => new CategoryReadDto
             {
                 Id = c.Id,
-                Name = c.Name
+                Name = c.Name,
+                Slug = c.Slug,
+                Url = c.Url,
+                IsActive = c.IsActive,
+                ParentId = c.ParentId
             })
-            .ToList();
+            .ToListAsync();
     }
 
-    public CategoryReadDto? GetById(int id)
+    public async Task<CategoryReadDto?> GetByIdAsync(int id)
     {
-        var category = _context.Categories.FirstOrDefault(c => c.Id == id);
+        var category = await _context.Categories.FirstOrDefaultAsync(c => c.Id == id);
         if (category == null) return null;
 
         return new CategoryReadDto
         {
             Id = category.Id,
-            Name = category.Name
+            Name = category.Name,
+            Slug = category.Slug,
+            Url = category.Url,
+            IsActive = category.IsActive,
+            ParentId = category.ParentId
         };
     }
 }
