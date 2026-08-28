@@ -1,8 +1,11 @@
+using Microsoft.Extensions.Caching.Distributed;
 using ProductsApi.DTOs;
 using ProductsApi.Models;
 using ProductsApi.Repositories;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ProductsApi.Services;
@@ -10,10 +13,12 @@ namespace ProductsApi.Services;
 public class CategoryService : ICategoryService
 {
     private readonly ICategoryRepository _repository;
+    private readonly IDistributedCache _cache;
 
-    public CategoryService(ICategoryRepository repository)
+    public CategoryService(ICategoryRepository repository, IDistributedCache cache)
     {
         _repository = repository;
+        _cache = cache;
     }
 
     public async Task<CategoryReadDto> CreateAsync(CategoryCreateDto dto)
@@ -45,14 +50,30 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryReadDto?> GetByIdAsync(int id)
     {
+        string cacheKey = $"category_{id}";
+        var cachedCategory = await _cache.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cachedCategory))
+        {
+            return JsonSerializer.Deserialize<CategoryReadDto>(cachedCategory);
+        }
+
         var category = await _repository.GetByIdAsync(id);
         if (category == null) return null;
 
-        return new CategoryReadDto
+        var dto = new CategoryReadDto
         {
             Id = category.Id,
             Name = category.Name
         };
+
+        var cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+        };
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(dto), cacheOptions);
+
+        return dto;
     }
 
     public async Task<CategoryReadDto?> UpdateAsync(int id, CategoryUpdateDto dto)
@@ -64,6 +85,8 @@ public class CategoryService : ICategoryService
         
         var updated = await _repository.UpdateAsync(category);
 
+        await _cache.RemoveAsync($"category_{id}");
+
         return new CategoryReadDto
         {
             Id = updated.Id,
@@ -73,7 +96,12 @@ public class CategoryService : ICategoryService
 
     public async Task<bool> DeleteAsync(int id)
     {
-        return await _repository.DeleteAsync(id);
+        var result = await _repository.DeleteAsync(id);
+        if (result)
+        {
+            await _cache.RemoveAsync($"category_{id}");
+        }
+        return result;
     }
 
     public async Task<IEnumerable<CategoryReadDto>> GetParentsAsync(int id)
