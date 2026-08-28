@@ -20,5 +20,8 @@ public class Product
     [Column("price")]
     public decimal Price { get; set; }
 
+    [Column("stock_count")]
+    public int StockCount { get; set; } = 0;
+
     public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
 }

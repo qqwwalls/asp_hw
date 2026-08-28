@@ -46,4 +46,28 @@ public class EmailService : IEmailService
             System.Console.WriteLine($"Failed to send email. Ensure SMTP settings in appsettings.json are valid. The token is: {resetToken}. Error: {ex.Message}");
         }
     }
+
+    public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
+    {
+        var emailSettings = _config.GetSection("EmailSettings");
+        var message = new MimeMessage();
+        
+        message.From.Add(new MailboxAddress(emailSettings["SenderName"], emailSettings["SenderEmail"]!));
+        message.To.Add(new MailboxAddress("", toEmail));
+        message.Subject = subject;
+
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = htmlMessage
+        };
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(emailSettings["SmtpServer"]!, int.Parse(emailSettings["SmtpPort"]!), MailKit.Security.SecureSocketOptions.Auto);
+        await client.AuthenticateAsync(emailSettings["SmtpUsername"]!, emailSettings["SmtpPassword"]!);
+        
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
+    }
 }
