@@ -52,6 +52,7 @@ builder.Services.AddScoped<IProductService, ProductsApi.Services.ProductService>
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -71,11 +72,30 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidAudience = builder.Configuration["JwtSettings:Audience"],
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role
     };
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    context.Database.Migrate();
+
+    if (!context.Users.Any(u => u.Role == "Admin"))
+    {
+        var admin = new ProductsApi.Models.User
+        {
+            Email = "admin@admin.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("AdminPassword123!"),
+            Role = "Admin"
+        };
+        context.Users.Add(admin);
+        context.SaveChanges();
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {

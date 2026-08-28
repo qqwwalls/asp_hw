@@ -20,5 +20,14 @@ public class User
     [Column("password_hash")]
     public string PasswordHash { get; set; } = string.Empty;
 
+    [Column("role")]
+    public string Role { get; set; } = "User";
+
+    [Column("reset_token")]
+    public string? ResetToken { get; set; }
+
+    [Column("reset_token_expires")]
+    public DateTime? ResetTokenExpires { get; set; }
+
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }
