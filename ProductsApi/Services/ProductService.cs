@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using ProductsApi.DTOs;
 using ProductsApi.Models;
@@ -5,6 +6,7 @@ using ProductsApi.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ProductsApi.Services;
@@ -14,12 +16,14 @@ public class ProductService : IProductService
     private readonly IProductRepository _repository;
     private readonly IFileService _fileService;
     private readonly IConfiguration _configuration;
+    private readonly IDistributedCache _cache;
 
-    public ProductService(IProductRepository repository, IFileService fileService, IConfiguration configuration)
+    public ProductService(IProductRepository repository, IFileService fileService, IConfiguration configuration, IDistributedCache cache)
     {
         _repository = repository;
         _fileService = fileService;
         _configuration = configuration;
+        _cache = cache;
     }
 
     public async Task<ProductReadDto> CreateAsync(ProductCreateDto dto)
@@ -51,6 +55,8 @@ public class ProductService : IProductService
 
         var created = await _repository.AddAsync(product);
 
+        await _cache.RemoveAsync("products_all");
+
         return new ProductReadDto
         {
             Id = created.Id,
@@ -62,27 +68,59 @@ public class ProductService : IProductService
 
     public async Task<IEnumerable<ProductReadDto>> GetAllAsync()
     {
+        string cacheKey = "products_all";
+        var cachedProducts = await _cache.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cachedProducts))
+        {
+            return JsonSerializer.Deserialize<IEnumerable<ProductReadDto>>(cachedProducts)!;
+        }
+
         var products = await _repository.GetAllAsync();
-        return products.Select(p => new ProductReadDto
+        var dtos = products.Select(p => new ProductReadDto
         {
             Id = p.Id,
             Name = p.Name,
             Price = p.Price,
             ImageUrls = p.Images.Select(i => i.Url).ToList()
-        });
+        }).ToList();
+
+        var cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+        };
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(dtos), cacheOptions);
+
+        return dtos;
     }
 
     public async Task<ProductReadDto?> GetByIdAsync(int id)
     {
+        string cacheKey = $"product_{id}";
+        var cachedProduct = await _cache.GetStringAsync(cacheKey);
+
+        if (!string.IsNullOrEmpty(cachedProduct))
+        {
+            return JsonSerializer.Deserialize<ProductReadDto>(cachedProduct);
+        }
+
         var product = await _repository.GetByIdAsync(id);
         if (product == null) return null;
 
-        return new ProductReadDto
+        var dto = new ProductReadDto
         {
             Id = product.Id,
             Name = product.Name,
             Price = product.Price,
             ImageUrls = product.Images.Select(i => i.Url).ToList()
         };
+
+        var cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+        };
+        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(dto), cacheOptions);
+
+        return dto;
     }
 }
