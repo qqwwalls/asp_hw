@@ -18,11 +18,13 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext _context;
     private readonly IConfiguration _config;
+    private readonly IRabbitMqService _rabbitMqService;
 
-    public AuthService(AppDbContext context, IConfiguration config)
+    public AuthService(AppDbContext context, IConfiguration config, IRabbitMqService rabbitMqService)
     {
         _context = context;
         _config = config;
+        _rabbitMqService = rabbitMqService;
     }
 
     public async Task<AuthResultDto?> RegisterAsync(RegisterDto dto)
@@ -35,7 +37,8 @@ public class AuthService : IAuthService
         var user = new User
         {
             Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            Role = "User"
         };
 
         _context.Users.Add(user);
@@ -52,6 +55,15 @@ public class AuthService : IAuthService
         });
 
         await _context.SaveChangesAsync();
+
+        try 
+        {
+            await _rabbitMqService.SendMessageAsync(new { user.Id, user.Email, user.Role }, "Users");
+        } 
+        catch (Exception ex)
+        {
+            Console.WriteLine($"RabbitMQ error: {ex.Message}");
+        }
 
         return new AuthResultDto
         {
