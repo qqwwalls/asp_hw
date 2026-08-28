@@ -70,6 +70,53 @@ public class AuthController : ControllerBase
         return Ok(new { Token = newAccessToken });
     }
 
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordDto dto,
+        [FromServices] ProductsApi.Data.AppDbContext context,
+        [FromServices] IEmailService emailService)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var user = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.Users, u => u.Email == dto.Email);
+        if (user == null)
+        {
+            return Ok(new { Message = "If that email address is in our database, we will send you an email to reset your password." });
+        }
+
+        var resetToken = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+        user.ResetToken = System.Convert.ToBase64String(resetToken);
+        user.ResetTokenExpires = DateTime.UtcNow.AddHours(1);
+
+        await context.SaveChangesAsync();
+
+        await emailService.SendPasswordResetEmailAsync(user.Email, user.ResetToken);
+
+        return Ok(new { Message = "If that email address is in our database, we will send you an email to reset your password." });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordDto dto,
+        [FromServices] ProductsApi.Data.AppDbContext context)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var user = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(context.Users, u => u.ResetToken == dto.Token);
+        if (user == null || user.ResetTokenExpires < DateTime.UtcNow)
+        {
+            return BadRequest(new { Error = "Invalid or expired token." });
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        user.ResetToken = null;
+        user.ResetTokenExpires = null;
+
+        await context.SaveChangesAsync();
+
+        return Ok(new { Message = "Password has been reset successfully." });
+    }
+
     private void SetTokenCookie(string token)
     {
         var cookieOptions = new CookieOptions
