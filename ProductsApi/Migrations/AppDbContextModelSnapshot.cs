@@ -47,6 +47,48 @@ namespace ProductsApi.Migrations
                     b.ToTable("categories");
                 });
 
+            modelBuilder.Entity("ProductsApi.Models.DeliveryAddress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("city");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("country");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("street");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("ZipCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("zip_code");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("delivery_addresses");
+                });
+
             modelBuilder.Entity("ProductsApi.Models.Order", b =>
                 {
                     b.Property<int>("Id")
@@ -238,6 +280,17 @@ namespace ProductsApi.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("ProductsApi.Models.DeliveryAddress", b =>
+                {
+                    b.HasOne("ProductsApi.Models.User", "User")
+                        .WithMany("DeliveryAddresses")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ProductsApi.Models.Order", b =>
                 {
                     b.HasOne("ProductsApi.Models.User", "User")
@@ -307,6 +360,8 @@ namespace ProductsApi.Migrations
 
             modelBuilder.Entity("ProductsApi.Models.User", b =>
                 {
+                    b.Navigation("DeliveryAddresses");
+
                     b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
