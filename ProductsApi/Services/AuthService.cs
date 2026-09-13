@@ -113,6 +113,56 @@ public class AuthService : IAuthService
         return GenerateJwtToken(rt.User);
     }
 
+    public async Task<AuthResultDto?> ExternalLoginAsync(string email, string providerName, string providerId)
+    {
+        var provider = await _context.Providers.FirstOrDefaultAsync(p => p.Name == providerName);
+        if (provider == null) return null;
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (user == null)
+        {
+            user = new User
+            {
+                Email = email,
+                PasswordHash = "",
+                Role = "User"
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+        }
+
+        var userProvider = await _context.UserProviders.FirstOrDefaultAsync(up => up.UserId == user.Id && up.ProviderId == provider.Id);
+        if (userProvider == null)
+        {
+            userProvider = new UserProvider
+            {
+                UserId = user.Id,
+                ProviderId = provider.Id,
+                NumberProvider = providerId
+            };
+            _context.UserProviders.Add(userProvider);
+            await _context.SaveChangesAsync();
+        }
+
+        var token = GenerateJwtToken(user);
+        var refreshToken = GenerateRefreshToken();
+
+        user.RefreshTokens.Add(new RefreshToken
+        {
+            Token = refreshToken,
+            Expires = DateTime.UtcNow.AddDays(_config.GetValue<int>("JwtSettings:RefreshTokenExpiryDays")),
+            Created = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+
+        return new AuthResultDto
+        {
+            Token = token,
+            RefreshToken = refreshToken
+        };
+    }
+
     private string GenerateJwtToken(User user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();

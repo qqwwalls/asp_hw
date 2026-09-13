@@ -1,8 +1,11 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ProductsApi.DTOs;
 using ProductsApi.Services;
 using System;
+using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace ProductsApi.Controllers;
@@ -33,6 +36,49 @@ public class AuthController : ControllerBase
         SetTokenCookie(result.RefreshToken);
 
         return Ok(new { Token = result.Token });
+    }
+
+    [HttpGet("login-google")]
+    public IActionResult LoginGoogle()
+    {
+        var properties = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+        {
+            RedirectUri = Url.Action(nameof(ExternalResponse))
+        };
+        return Challenge(properties, "Google"); // Using literal "Google" to avoid missing using
+    }
+
+    [HttpGet("external-response")]
+    public async Task<IActionResult> ExternalResponse()
+    {
+        var result = await HttpContext.AuthenticateAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+
+        if (!result.Succeeded)
+            return BadRequest("Помилка зовнішньої аутентифікації.");
+
+        var claims = result.Principal?.Identities.FirstOrDefault()?.Claims;
+
+        var email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        var name = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+        var providerId = claims?.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(providerId))
+        {
+            return BadRequest("Не вдалося отримати необхідні дані від провайдера.");
+        }
+
+        var providerName = result.Principal?.Identity?.AuthenticationType ?? "google";
+
+        var authResult = await _authService.ExternalLoginAsync(email, providerName.ToLower(), providerId);
+
+        if (authResult == null)
+        {
+            return BadRequest("Помилка при збереженні або авторизації користувача.");
+        }
+
+        SetTokenCookie(authResult.RefreshToken);
+
+        return Ok(new { Token = authResult.Token, Name = name, Email = email, ProviderId = providerId });
     }
 
     [HttpPost("login")]

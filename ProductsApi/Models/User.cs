@@ -32,4 +32,6 @@ public class User
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
     public ICollection<DeliveryAddress> DeliveryAddresses { get; set; } = new List<DeliveryAddress>();
+
+    public ICollection<UserProvider> UserProviders { get; set; } = new List<UserProvider>();
 }

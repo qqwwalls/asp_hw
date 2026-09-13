@@ -205,6 +205,41 @@ namespace ProductsApi.Migrations
                     b.ToTable("product_images");
                 });
 
+            modelBuilder.Entity("ProductsApi.Models.Provider", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("providers");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "google"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "fb"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "apple"
+                        });
+                });
+
             modelBuilder.Entity("ProductsApi.Models.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -269,6 +304,40 @@ namespace ProductsApi.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("users");
+                });
+
+            modelBuilder.Entity("ProductsApi.Models.UserProvider", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("NumberProvider")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("number_provider");
+
+                    b.Property<int>("ProviderId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("provider_id");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("users_providers");
                 });
 
             modelBuilder.Entity("ProductsApi.Models.Category", b =>
@@ -343,6 +412,25 @@ namespace ProductsApi.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ProductsApi.Models.UserProvider", b =>
+                {
+                    b.HasOne("ProductsApi.Models.Provider", "Provider")
+                        .WithMany("UserProviders")
+                        .HasForeignKey("ProviderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProductsApi.Models.User", "User")
+                        .WithMany("UserProviders")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Provider");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ProductsApi.Models.Category", b =>
                 {
                     b.Navigation("SubCategories");
@@ -358,11 +446,18 @@ namespace ProductsApi.Migrations
                     b.Navigation("Images");
                 });
 
+            modelBuilder.Entity("ProductsApi.Models.Provider", b =>
+                {
+                    b.Navigation("UserProviders");
+                });
+
             modelBuilder.Entity("ProductsApi.Models.User", b =>
                 {
                     b.Navigation("DeliveryAddresses");
 
                     b.Navigation("RefreshTokens");
+
+                    b.Navigation("UserProviders");
                 });
 #pragma warning restore 612, 618
         }
