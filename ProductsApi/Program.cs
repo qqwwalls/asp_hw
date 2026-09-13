@@ -54,6 +54,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IRabbitMqService, RabbitMqService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
 
 builder.Services.AddHostedService<OrderProcessingService>();
 

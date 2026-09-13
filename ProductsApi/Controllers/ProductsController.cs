@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
+using ProductsApi.Data;
 using ProductsApi.DTOs;
+using ProductsApi.Models;
 using ProductsApi.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -13,10 +16,12 @@ namespace ProductsApi.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
+    private readonly IReviewService _reviewService;
 
-    public ProductsController(IProductService productService)
+    public ProductsController(IProductService productService, IReviewService reviewService)
     {
         _productService = productService;
+        _reviewService = reviewService;
     }
 
     [HttpPost]
@@ -55,5 +60,28 @@ public class ProductsController : ControllerBase
         if (product == null) return NotFound();
         
         return Ok(product);
+    }
+
+    [HttpPost("{id}/reviews")]
+    public async Task<IActionResult> AddReview(int id, [FromBody] CreateReviewDto dto)
+    {
+        var product = await _productService.GetByIdAsync(id);
+        if (product == null)
+        {
+            return NotFound(new { message = "Product not found" });
+        }
+
+        var review = new ProductReview
+        {
+            ProductId = id,
+            Author = dto.Author,
+            Text = dto.Text,
+            IsQuestion = dto.IsQuestion,
+            CreatedAt = System.DateTime.UtcNow
+        };
+
+        await _reviewService.AddReviewAsync(review);
+
+        return Ok(new { message = "Review added successfully" });
     }
 }
