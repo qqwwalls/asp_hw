@@ -1,5 +1,7 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
+using ProductsApi.CQRS.Commands;
 using ProductsApi.Data;
 using ProductsApi.DTOs;
 using ProductsApi.Models;
@@ -17,11 +19,13 @@ public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
     private readonly IReviewService _reviewService;
+    private readonly IMediator _mediator;
 
-    public ProductsController(IProductService productService, IReviewService reviewService)
+    public ProductsController(IProductService productService, IReviewService reviewService, IMediator mediator)
     {
         _productService = productService;
         _reviewService = reviewService;
+        _mediator = mediator;
     }
 
     [HttpPost]
@@ -34,7 +38,7 @@ public class ProductsController : ControllerBase
 
         try
         {
-            var created = await _productService.CreateAsync(dto);
+            var created = await _mediator.Send(new CreateProductCommand(dto));
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
         catch (InvalidOperationException ex)

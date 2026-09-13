@@ -56,6 +56,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IRabbitMqService, RabbitMqService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+
 builder.Services.AddHostedService<OrderProcessingService>();
 
 builder.Services.AddStackExchangeRedisCache(options =>

@@ -17,6 +17,10 @@ public class Category
     [Column("name")]
     public string Name { get; set; } = string.Empty;
 
+    [MaxLength(100)]
+    [Column("slug")]
+    public string Slug { get; set; } = string.Empty;
+
     [Column("parent_id")]
     public int? ParentId { get; set; }
 

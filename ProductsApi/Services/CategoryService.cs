@@ -26,6 +26,7 @@ public class CategoryService : ICategoryService
         var category = new Category
         {
             Name = dto.Name,
+            Slug = dto.Slug,
             ParentId = dto.ParentId
         };
 

@@ -34,6 +34,12 @@ namespace ProductsApi.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("parent_id");
 
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("slug");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ParentId");

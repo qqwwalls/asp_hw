@@ -1,4 +1,7 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using ProductsApi.CQRS.Commands;
+using ProductsApi.CQRS.Queries;
 using ProductsApi.DTOs;
 using ProductsApi.Services;
 using System.Collections.Generic;
@@ -11,10 +14,12 @@ namespace ProductsApi.Controllers;
 public class CategoryController : ControllerBase
 {
     private readonly ICategoryService _categoryService;
+    private readonly IMediator _mediator;
 
-    public CategoryController(ICategoryService categoryService)
+    public CategoryController(ICategoryService categoryService, IMediator mediator)
     {
         _categoryService = categoryService;
+        _mediator = mediator;
     }
 
     [HttpPost]
@@ -25,7 +30,7 @@ public class CategoryController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var created = await _categoryService.CreateAsync(dto);
+        var created = await _mediator.Send(new CreateCategoryCommand(dto));
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
@@ -42,7 +47,17 @@ public class CategoryController : ControllerBase
     [ProducesResponseType(404)]
     public async Task<IActionResult> GetById(int id)
     {
-        var category = await _categoryService.GetByIdAsync(id);
+        var category = await _mediator.Send(new GetCategoryByIdQuery(id));
+        if (category == null) return NotFound();
+        return Ok(category);
+    }
+
+    [HttpGet("{slug}")]
+    [ProducesResponseType(typeof(CategoryReadDto), 200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetCategoryBySlug(string slug)
+    {
+        var category = await _mediator.Send(new GetCategoryBySlugQuery(slug));
         if (category == null) return NotFound();
         return Ok(category);
     }
