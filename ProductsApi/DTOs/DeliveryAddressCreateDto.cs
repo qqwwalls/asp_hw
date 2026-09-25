@@ -6,6 +6,7 @@ public class DeliveryAddressCreateDto
 {
     [Required]
     [MaxLength(100)]
+    [ProductsApi.Validation.AllowedCountry("Ukraine", "Poland", "USA", "UK")]
     public string Country { get; set; } = string.Empty;
 
     [Required]
